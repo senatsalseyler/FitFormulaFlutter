@@ -26,7 +26,7 @@ class _HomePageState extends State<HomePage> {
       final response = await http.get(
         url,
         headers: {
-          'User-Agent': 'CalorieTrackerApp - Flutter - Version 1.0 - www.example.com',
+          'User-Agent': 'FitFormula - Flutter - Version 1.0 - www.example.com',
         },
       );
 
@@ -63,12 +63,12 @@ class _HomePageState extends State<HomePage> {
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
-            title: Text('Calorie Limit Reached!'),
-            content: Text('You have reached or exceeded your calorie limit.'),
+            title: const Text('Calorie Limit Reached!'),
+            content: const Text('You have reached or exceeded your calorie limit.'),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: Text('OK'),
+                child: const Text('OK'),
               ),
             ],
           ),
@@ -88,21 +88,21 @@ class _HomePageState extends State<HomePage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Home'),
+        title: const Text('Home'),
         actions: [
           IconButton(
-            icon: Icon(Icons.logout),
+            icon: const Icon(Icons.logout),
             onPressed: signUserOut,
           ),
         ],
         bottom: PreferredSize(
-          preferredSize: Size.fromHeight(60.0),
+          preferredSize: const Size.fromHeight(60.0),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: TextField(
               decoration: InputDecoration(
                 hintText: 'Search for food...',
-                prefixIcon: Icon(Icons.search),
+                prefixIcon: const Icon(Icons.search),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10.0),
                 ),
@@ -126,11 +126,11 @@ class _HomePageState extends State<HomePage> {
                       backgroundColor: Colors.blue,
                       child: Text(
                         widget.name.substring(0, 1).toUpperCase(),
-                        style: TextStyle(fontSize: 30, color: Colors.white),
+                        style: const TextStyle(fontSize: 30, color: Colors.white),
                       ),
                     ),
-                    SizedBox(height: 8),
-                    Text('Welcome, ${widget.name}!', style: TextStyle(fontSize: 16)),
+                    const SizedBox(height: 8),
+                    Text('Welcome, ${widget.name}!', style: const TextStyle(fontSize: 16)),
                   ],
                 ),
                 Column(
@@ -139,15 +139,15 @@ class _HomePageState extends State<HomePage> {
                       value: progress,
                       strokeWidth: 8,
                       backgroundColor: Colors.grey[200],
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+                      valueColor: const AlwaysStoppedAnimation<Color>(Colors.green),
                     ),
-                    SizedBox(height: 8),
-                    Text('Calories: $totalCalories / ${widget.calorieGoal}', style: TextStyle(fontSize: 16)),
+                    const SizedBox(height: 8),
+                    Text('Calories: $totalCalories / ${widget.calorieGoal}', style: const TextStyle(fontSize: 16)),
                   ],
                 ),
               ],
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             Expanded(
               child: ListView.builder(
                 itemCount: foodList.length,
@@ -156,27 +156,27 @@ class _HomePageState extends State<HomePage> {
                   return ListTile(
                     leading: food['image'] != null
                         ? Image.network(food['image'], width: 50, height: 50, fit: BoxFit.cover)
-                        : Icon(Icons.fastfood),
+                        : const Icon(Icons.fastfood),
                     title: Text(food['name']),
                     subtitle: Text('Calories: ${food['calories']} kcal/100g'),
                     trailing: IconButton(
-                      icon: Icon(Icons.add),
+                      icon: const Icon(Icons.add),
                       onPressed: () {
                         showDialog(
                           context: context,
                           builder: (context) {
                             TextEditingController portionController = TextEditingController();
                             return AlertDialog(
-                              title: Text('Enter Portion (g)'),
+                              title: const Text('Enter Portion (g)'),
                               content: TextField(
                                 controller: portionController,
                                 keyboardType: TextInputType.number,
-                                decoration: InputDecoration(hintText: 'Enter portion in grams'),
+                                decoration: const InputDecoration(hintText: 'Enter portion in grams'),
                               ),
                               actions: [
                                 TextButton(
                                   onPressed: () => Navigator.pop(context),
-                                  child: Text('Cancel'),
+                                  child: const Text('Cancel'),
                                 ),
                                 ElevatedButton(
                                   onPressed: () {
@@ -186,7 +186,7 @@ class _HomePageState extends State<HomePage> {
                                       Navigator.pop(context);
                                     }
                                   },
-                                  child: Text('Add'),
+                                  child: const Text('Add'),
                                 ),
                               ],
                             );
@@ -198,8 +198,8 @@ class _HomePageState extends State<HomePage> {
                 },
               ),
             ),
-            Divider(),
-            Text('Saved Foods:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const Divider(),
+            const Text('Saved Foods:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             Expanded(
               child: ListView.builder(
                 itemCount: savedFoods.length,
@@ -208,7 +208,7 @@ class _HomePageState extends State<HomePage> {
                   return ListTile(
                     leading: food['image'] != null
                         ? Image.network(food['image'], width: 50, height: 50, fit: BoxFit.cover)
-                        : Icon(Icons.fastfood),
+                        : const Icon(Icons.fastfood),
                     title: Text('${food['name']} (x${food['portion']}g)'),
                     subtitle: Text('Calories: ${(food['calories'] * food['portion'] ~/ 100)} kcal'),
                   );

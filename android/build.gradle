@@ -20,7 +20,7 @@ tasks.register("clean", Delete) {
 android {
     compileSdkVersion flutter.compileSdkVersion
     defaultConfig {
-        applicationId "com.example.myapp" // Replace this with your desired ID
+        applicationId "com.example.flutter_application_1" // Replace this with your desired ID
         minSdkVersion flutter.minSdkVersion
         targetSdkVersion flutter.targetSdkVersion
         versionCode 1
