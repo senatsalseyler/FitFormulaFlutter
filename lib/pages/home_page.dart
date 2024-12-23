@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class HomePage extends StatefulWidget {
   final String name;
@@ -13,11 +15,65 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int totalCalories = 0;
+  List<Map<String, dynamic>> foodList = [];
+  List<Map<String, dynamic>> savedFoods = [];
 
-  // Simulate adding food (you would replace this logic with actual food item tracking)
-  void addFood(int calories) {
+  // Fetch food from Open Food Facts API
+  Future<void> searchFood(String query) async {
+    final url = Uri.parse('https://world.openfoodfacts.org/cgi/search.pl?search_terms=$query&search_simple=1&json=1');
+
+    try {
+      final response = await http.get(
+        url,
+        headers: {
+          'User-Agent': 'CalorieTrackerApp - Flutter - Version 1.0 - www.example.com',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          foodList = (data['products'] as List).map((item) {
+            return {
+              'name': item['product_name'] ?? 'Unknown',
+              'calories': int.tryParse(item['nutriments']?['energy-kcal_100g']?.toString() ?? '0') ?? 0,
+              'image': item['image_url'],
+              'protein': item['nutriments']?['proteins_100g'] ?? 0.0,
+              'carbs': item['nutriments']?['carbohydrates_100g'] ?? 0.0,
+              'fat': item['nutriments']?['fat_100g'] ?? 0.0,
+            };
+          }).toList();
+        });
+      } else {
+        print('Failed to fetch food data: ${response.reasonPhrase}');
+      }
+    } catch (e) {
+      print('Error fetching food data: $e');
+    }
+  }
+
+  // Add food and calories
+  void addFood(Map<String, dynamic> food, int portion) {
     setState(() {
-      totalCalories += calories;
+      int addedCalories = ((food['calories'] ?? 0) * portion) ~/ 100;
+      totalCalories += addedCalories;
+      savedFoods.add({...food, 'portion': portion});
+
+      if (totalCalories >= widget.calorieGoal) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text('Calorie Limit Reached!'),
+            content: Text('You have reached or exceeded your calorie limit.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
     });
   }
 
@@ -28,144 +84,136 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final progress = (totalCalories / widget.calorieGoal) * 100;
+    final progress = (totalCalories / widget.calorieGoal).clamp(0.0, 1.0);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Home'),
+        title: Text('Home'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout),
+            icon: Icon(Icons.logout),
             onPressed: signUserOut,
           ),
         ],
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Display user name
-            CircleAvatar(
-              radius: 50,
-              backgroundColor: Colors.blue,
-              child: Text(
-                widget.name.substring(0, 1).toUpperCase(),
-                style: const TextStyle(fontSize: 40, color: Colors.white),
+        bottom: PreferredSize(
+          preferredSize: Size.fromHeight(60.0),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: TextField(
+              decoration: InputDecoration(
+                hintText: 'Search for food...',
+                prefixIcon: Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10.0),
+                ),
               ),
+              onSubmitted: searchFood,
             ),
-            const SizedBox(height: 20),
-            Text(
-              'Welcome, ${widget.name}!',
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              'Your Calorie Goal: ${widget.calorieGoal}',
-              style: const TextStyle(fontSize: 18),
-            ),
-            const SizedBox(height: 20),
-            // Display calorie progress
-            Text(
-              'Calories Consumed: $totalCalories',
-              style: const TextStyle(fontSize: 18),
-            ),
-            const SizedBox(height: 20),
-            CircularProgressIndicator(
-              value: progress / 100,
-              strokeWidth: 6,
-              backgroundColor: Colors.grey[200],
-              valueColor: const AlwaysStoppedAnimation<Color>(Colors.green),
-            ),
-            const SizedBox(height: 20),
-            // Button to simulate adding food (with a fixed calorie value for demonstration)
-            ElevatedButton(
-              onPressed: () => addFood(50),  // Add 50 calories as a test
-              child: const Text('Add Food (50 Calories)'),
-            ),
-            const SizedBox(height: 20),
-            // Button to navigate to the DetailsPage (in case user needs to change their info)
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => DetailsPage(
-                      name: widget.name,
-                      calorieGoal: widget.calorieGoal,
-                    ),
-                  ),
-                );
-              },
-              child: const Text('Edit Your Details'),
-            ),
-          ],
+          ),
         ),
       ),
-    );
-  }
-}
-
-class DetailsPage extends StatefulWidget {
-  final String name;
-  final int calorieGoal;
-
-  const DetailsPage({super.key, required this.name, required this.calorieGoal});
-
-  @override
-  _DetailsPageState createState() => _DetailsPageState();
-}
-
-class _DetailsPageState extends State<DetailsPage> {
-  late TextEditingController _nameController;
-  late TextEditingController _calorieController;
-
-  @override
-  void initState() {
-    super.initState();
-    _nameController = TextEditingController(text: widget.name);
-    _calorieController = TextEditingController(text: widget.calorieGoal.toString());
-  }
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _calorieController.dispose();
-    super.dispose();
-  }
-
-  void saveDetails() {
-    String newName = _nameController.text;
-    int newCalorieGoal = int.tryParse(_calorieController.text) ?? widget.calorieGoal;
-
-    // Save the updated details here (e.g., update in Firebase or local storage)
-
-    Navigator.pop(context, {'name': newName, 'calorieGoal': newCalorieGoal});
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Edit Your Details'),
-      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            TextField(
-              controller: _nameController,
-              decoration: const InputDecoration(labelText: 'Name'),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  children: [
+                    CircleAvatar(
+                      radius: 40,
+                      backgroundColor: Colors.blue,
+                      child: Text(
+                        widget.name.substring(0, 1).toUpperCase(),
+                        style: TextStyle(fontSize: 30, color: Colors.white),
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    Text('Welcome, ${widget.name}!', style: TextStyle(fontSize: 16)),
+                  ],
+                ),
+                Column(
+                  children: [
+                    CircularProgressIndicator(
+                      value: progress,
+                      strokeWidth: 8,
+                      backgroundColor: Colors.grey[200],
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+                    ),
+                    SizedBox(height: 8),
+                    Text('Calories: $totalCalories / ${widget.calorieGoal}', style: TextStyle(fontSize: 16)),
+                  ],
+                ),
+              ],
             ),
-            TextField(
-              controller: _calorieController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Calorie Goal'),
+            SizedBox(height: 16),
+            Expanded(
+              child: ListView.builder(
+                itemCount: foodList.length,
+                itemBuilder: (context, index) {
+                  final food = foodList[index];
+                  return ListTile(
+                    leading: food['image'] != null
+                        ? Image.network(food['image'], width: 50, height: 50, fit: BoxFit.cover)
+                        : Icon(Icons.fastfood),
+                    title: Text(food['name']),
+                    subtitle: Text('Calories: ${food['calories']} kcal/100g'),
+                    trailing: IconButton(
+                      icon: Icon(Icons.add),
+                      onPressed: () {
+                        showDialog(
+                          context: context,
+                          builder: (context) {
+                            TextEditingController portionController = TextEditingController();
+                            return AlertDialog(
+                              title: Text('Enter Portion (g)'),
+                              content: TextField(
+                                controller: portionController,
+                                keyboardType: TextInputType.number,
+                                decoration: InputDecoration(hintText: 'Enter portion in grams'),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: Text('Cancel'),
+                                ),
+                                ElevatedButton(
+                                  onPressed: () {
+                                    final portion = int.tryParse(portionController.text) ?? 0;
+                                    if (portion > 0) {
+                                      addFood(food, portion);
+                                      Navigator.pop(context);
+                                    }
+                                  },
+                                  child: Text('Add'),
+                                ),
+                              ],
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  );
+                },
+              ),
             ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: saveDetails,
-              child: const Text('Save Details'),
+            Divider(),
+            Text('Saved Foods:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Expanded(
+              child: ListView.builder(
+                itemCount: savedFoods.length,
+                itemBuilder: (context, index) {
+                  final food = savedFoods[index];
+                  return ListTile(
+                    leading: food['image'] != null
+                        ? Image.network(food['image'], width: 50, height: 50, fit: BoxFit.cover)
+                        : Icon(Icons.fastfood),
+                    title: Text('${food['name']} (x${food['portion']}g)'),
+                    subtitle: Text('Calories: ${(food['calories'] * food['portion'] ~/ 100)} kcal'),
+                  );
+                },
+              ),
             ),
           ],
         ),
