@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'login_page.dart'; // Navigate to LoginPage after registration
+import 'auth_page.dart'; // Navigate to LoginPage after registration
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -21,7 +21,7 @@ class _RegisterPageState extends State<RegisterPage> {
       );
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => LoginPage()),  // Navigate back to LoginPage
+        MaterialPageRoute(builder: (context) => AuthPage()),  // Navigate back to LoginPage
       );
     } on FirebaseAuthException catch (e) {
       // Handle errors (e.g., show an error message to the user)

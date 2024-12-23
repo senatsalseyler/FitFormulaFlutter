@@ -3,7 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'food_detail_page.dart';  // Import the FoodDetailPage file
-import 'login_page.dart';
+import 'auth_page.dart';
 
 class HomePage extends StatefulWidget {
   final String name;
@@ -75,7 +75,7 @@ void signUserOut() {
     // After signing out, navigate back to the login page
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (context) => LoginPage()),  // Replace LoginPage() with the actual login page widget.
+      MaterialPageRoute(builder: (context) => AuthPage()),  // Replace LoginPage() with the actual login page widget.
     );
   });
 }
