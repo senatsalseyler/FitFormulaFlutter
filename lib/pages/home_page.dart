@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'food_detail_page.dart';  // Import the FoodDetailPage file
 
 class HomePage extends StatefulWidget {
   final String name;
@@ -32,10 +33,12 @@ class _HomePageState extends State<HomePage> {
       setState(() {
         foodList = jsonDecode(response.body)['products'] ?? [];
       });
+    } else {
+      print('Failed to fetch data');
     }
   }
 
-  // Simulate adding food (you would replace this logic with actual food item tracking)
+  // Add food to the calorie tracker
   void addFood(int calories) {
     setState(() {
       totalCalories += calories;
@@ -137,41 +140,70 @@ class _HomePageState extends State<HomePage> {
                         : Icon(Icons.fastfood),
                     title: Text(food['product_name'] ?? 'Unnamed Food'),
                     subtitle: Text('${food['nutriments']?['energy-kcal_100g'] ?? 0} kcal per 100g'),
-                    trailing: IconButton(
-                      icon: Icon(Icons.add),
-                      onPressed: () {
-                        showDialog(
-                          context: context,
-                          builder: (context) {
-                            final controller = TextEditingController();
-                            return AlertDialog(
-                              title: Text('Enter Portion Size (g)'),
-                              content: TextField(
-                                controller: controller,
-                                keyboardType: TextInputType.number,
-                                decoration: InputDecoration(hintText: 'Portion in grams'),
-                              ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () {
-                                    final portion = int.tryParse(controller.text) ?? 0;
-                                    final calories = ((food['nutriments']?['energy-kcal_100g'] ?? 0) * portion / 100).toInt();
-                                    addFood(calories);
-                                    setState(() {
-                                      savedFoods.add({
-                                        'name': food['product_name'],
-                                        'calories': calories,
-                                      });
-                                    });
-                                    Navigator.pop(context);
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Info Button to show food details
+                        IconButton(
+                          icon: Icon(Icons.info),
+                          onPressed: () {
+                            // Navigate to FoodDetailPage with relevant data
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => FoodDetailPage(
+                                  foodName: food['product_name'] ?? 'Unnamed Food',
+                                  calories: (food['nutriments']?['energy-kcal_100g'] ?? 0).toInt(),
+                                  protein: (food['nutriments']?['proteins_100g'] ?? 0).toDouble(),
+                                  carbs: (food['nutriments']?['carbohydrates_100g'] ?? 0).toDouble(),
+                                  fat: (food['nutriments']?['fat_100g'] ?? 0).toDouble(),
+                                  additionalInfo: {
+                                    'Vitamins': food['nutriments']?['vitamin_c_100g'] ?? 'N/A',
+                                    'Minerals': food['nutriments']?['sodium_100g'] ?? 'N/A',
                                   },
-                                  child: Text('Add'),
                                 ),
-                              ],
+                              ),
                             );
                           },
-                        );
-                      },
+                        ),
+                        // Add Button
+                        IconButton(
+                          icon: Icon(Icons.add),
+                          onPressed: () {
+                            showDialog(
+                              context: context,
+                              builder: (context) {
+                                final controller = TextEditingController();
+                                return AlertDialog(
+                                  title: Text('Enter Portion Size (g)'),
+                                  content: TextField(
+                                    controller: controller,
+                                    keyboardType: TextInputType.number,
+                                    decoration: InputDecoration(hintText: 'Portion in grams'),
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () {
+                                        final portion = int.tryParse(controller.text) ?? 0;
+                                        final calories = ((food['nutriments']?['energy-kcal_100g'] ?? 0) * portion / 100).toInt();
+                                        addFood(calories);
+                                        setState(() {
+                                          savedFoods.add({
+                                            'name': food['product_name'],
+                                            'calories': calories,
+                                          });
+                                        });
+                                        Navigator.pop(context);
+                                      },
+                                      child: Text('Add'),
+                                    ),
+                                  ],
+                                );
+                              },
+                            );
+                          },
+                        ),
+                      ],
                     ),
                   );
                 },
