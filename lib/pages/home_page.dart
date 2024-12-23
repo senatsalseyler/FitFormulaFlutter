@@ -18,9 +18,17 @@ class _HomePageState extends State<HomePage> {
   int totalCalories = 0;
   List<dynamic> foodList = [];
   List<dynamic> savedFoods = [];
+  TextEditingController searchController = TextEditingController();
 
   // Fetch food items from Open Food Facts API
   Future<void> fetchFood(String query) async {
+    if (query.isEmpty) {
+      setState(() {
+        foodList = [];
+      });
+      return;
+    }
+
     final url = Uri.parse('https://world.openfoodfacts.org/cgi/search.pl?search_terms=$query&search_simple=1&action=process&json=1');
     final response = await http.get(
       url,
@@ -71,17 +79,24 @@ class _HomePageState extends State<HomePage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: TextField(
-          onChanged: (query) async {
-            await fetchFood(query);
-          },
-          decoration: InputDecoration(
-            hintText: 'Search food',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8.0),
+        title: Column(
+          children: [
+            Text('Welcome, ${widget.name}'),
+            SizedBox(height: 4),
+            TextField(
+              controller: searchController,
+              onChanged: (query) async {
+                await fetchFood(query);
+              },
+              decoration: InputDecoration(
+                hintText: 'Search food',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8.0),
+                ),
+                prefixIcon: Icon(Icons.search),
+              ),
             ),
-            prefixIcon: Icon(Icons.search),
-          ),
+          ],
         ),
         actions: [
           IconButton(
@@ -157,10 +172,6 @@ class _HomePageState extends State<HomePage> {
                                   protein: (food['nutriments']?['proteins_100g'] ?? 0).toDouble(),
                                   carbs: (food['nutriments']?['carbohydrates_100g'] ?? 0).toDouble(),
                                   fat: (food['nutriments']?['fat_100g'] ?? 0).toDouble(),
-                                  additionalInfo: {
-                                    'Vitamins': food['nutriments']?['vitamin_c_100g'] ?? 'N/A',
-                                    'Minerals': food['nutriments']?['sodium_100g'] ?? 'N/A',
-                                  },
                                 ),
                               ),
                             );

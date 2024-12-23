@@ -6,7 +6,6 @@ class FoodDetailPage extends StatelessWidget {
   final double protein;
   final double carbs;
   final double fat;
-  final Map<String, dynamic> additionalInfo;
 
   const FoodDetailPage({
     Key? key,
@@ -15,7 +14,6 @@ class FoodDetailPage extends StatelessWidget {
     required this.protein,
     required this.carbs,
     required this.fat,
-    required this.additionalInfo,
   }) : super(key: key);
 
   @override
@@ -32,11 +30,6 @@ class FoodDetailPage extends StatelessWidget {
             Text('Protein: $protein g', style: TextStyle(fontSize: 18)),
             Text('Carbs: $carbs g', style: TextStyle(fontSize: 18)),
             Text('Fat: $fat g', style: TextStyle(fontSize: 18)),
-            SizedBox(height: 16),
-            Text('Additional Info:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            SizedBox(height: 8),
-            for (var entry in additionalInfo.entries)
-              Text('${entry.key}: ${entry.value}', style: TextStyle(fontSize: 16)),
             SizedBox(height: 16),
             ElevatedButton(
               onPressed: () {
