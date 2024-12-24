@@ -1,12 +1,14 @@
 import 'dart:async';
+import 'package:intl/intl.dart';
+
 import 'calendar_page.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';  // Import Firestore
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'food_detail_page.dart';  // Import the FoodDetailPage file
 import 'auth_page.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';  // Import Firestore
 
 class HomePage extends StatefulWidget {
   final String name;
@@ -24,36 +26,44 @@ class _HomePageState extends State<HomePage> {
   List<dynamic> savedFoods = [];
   TextEditingController searchController = TextEditingController();
   Timer? timer; 
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  late String userId;
+
+  // Initialize user ID
+  @override
+  void initState() {
+    super.initState();
+    userId = _auth.currentUser!.uid;  // Get the user ID from Firebase Authentication
+  }
+
   // Fetch food items from Open Food Facts API
   Future<void> fetchFood(String query) async {
-    if (timer != null)
-      {
-        timer!.cancel();
-      }
+    if (timer != null) {
+      timer!.cancel();
+    }
     if (query.isEmpty) {
-      
       setState(() {
         foodList = [];
       });
       return;
     }
 
-    timer = Timer(Duration(seconds: 2),()async{
+    timer = Timer(Duration(seconds: 2), () async {
       final url = Uri.parse('https://tr.openfoodfacts.org/cgi/search.pl?search_terms=$query&search_simple=1&action=process&json=1');
-    final response = await http.get(
-      url,
-      headers: {
-        'User-Agent': 'FitFormula - Flutter - Version 1.0 - www.example.com',
-      },
-    );
+      final response = await http.get(
+        url,
+        headers: {
+          'User-Agent': 'FitFormula - Flutter - Version 1.0 - www.example.com',
+        },
+      );
 
-    if (response.statusCode == 200) {
-      setState(() {
-        foodList = jsonDecode(response.body)['products'] ?? [];
-      });
-    } else {
-      print('Failed to fetch data');
-    }
+      if (response.statusCode == 200) {
+        setState(() {
+          foodList = jsonDecode(response.body)['products'] ?? [];
+        });
+      } else {
+        print('Failed to fetch data');
+      }
     });
   }
 
@@ -61,7 +71,13 @@ class _HomePageState extends State<HomePage> {
   void addFood(int calories) {
     setState(() {
       totalCalories += calories;
+      saveCaloriesToFirestore(totalCalories);
+      
+
       if (totalCalories >= widget.calorieGoal) {
+        // Save the calories for the day when goal is reached
+
+        // Show dialog
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
@@ -79,17 +95,52 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  // Sign out the user
-void signUserOut() {
-  FirebaseAuth.instance.signOut().then((_) {
-    // After signing out, navigate back to the login page
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => AuthPage()),  // Replace LoginPage() with the actual login page widget.
-    );
-  });
+  // Save the calorie data for the day to Firestore
+  // Save the calorie data for the selected day and add the new calories to existing value
+void saveCaloriesToFirestore(int caloriesToAdd) async {
+  FirebaseFirestore firestore = FirebaseFirestore.instance;
+  DateFormat formater = DateFormat("yyyy-MM-dd");
+  String dateKey = formater.format(DateTime.now().add(Duration(days: 1)));
+  // Check if there is already a value for this day
+  DocumentReference dayDoc = firestore
+      .collection('users')
+      .doc(userId)
+      .collection('dailyCalories')
+      .doc('caloriesData');
+
+  DocumentSnapshot snapshot = await dayDoc.get();
+
+  if (snapshot.exists) {
+    Map<String, dynamic> caloriesData = snapshot.data() as Map<String, dynamic>;
+
+    // If the day already has calories, add the new calories to the existing value
+    if (caloriesData.containsKey(dateKey)) {
+      int existingCalories = caloriesData[dateKey] ?? 0;
+      int updatedCalories = existingCalories + caloriesToAdd;
+
+      // Update Firestore with the new calories total
+      await dayDoc.update({dateKey: updatedCalories});
+    } else {
+      // If there's no data for the day, simply set the calories
+      await dayDoc.update({dateKey: caloriesToAdd});
+    }
+  } else {
+    // If there is no data for the user's daily calories collection, initialize it
+    await dayDoc.set({dateKey: caloriesToAdd});
+  }
 }
 
+
+  // Sign out the user
+  void signUserOut() {
+    FirebaseAuth.instance.signOut().then((_) {
+      // After signing out, navigate back to the login page
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => AuthPage()),  // Replace LoginPage() with the actual login page widget.
+      );
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -263,16 +314,16 @@ void signUserOut() {
             Divider(),
             Text(
               'Saved Foods:',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.purple),
+              style: TextStyle(fontSize: 18, color: Colors.purple),
             ),
+            // Displaying saved foods
             Expanded(
               child: ListView.builder(
                 itemCount: savedFoods.length,
                 itemBuilder: (context, index) {
-                  final saved = savedFoods[index];
                   return ListTile(
-                    title: Text(saved['name'] ?? 'Unnamed Food', style: TextStyle(color: Colors.purple)),
-                    subtitle: Text('${saved['calories']} kcal', style: TextStyle(color: Colors.purple)),
+                    title: Text(savedFoods[index]['name']),
+                    trailing: Text('${savedFoods[index]['calories']} kcal'),
                   );
                 },
               ),

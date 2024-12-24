@@ -74,6 +74,26 @@ class _CalendarPageState extends State<CalendarPage> {
     return Colors.grey; // No data for the day
   }
 
+  // Build the indicator widget to show calorie data on each day
+  Widget buildDayIndicator(String dateKey) {
+    if (dailyCalories.containsKey(dateKey)) {
+      final dailyCalorie = dailyCalories[dateKey]!;
+      return Positioned(
+        bottom: 2,
+        right: 2,
+        child: CircleAvatar(
+          radius: 8,
+          backgroundColor: dailyCalorie < calorieGoal ? Colors.green : Colors.red,
+          child: Text(
+            '${dailyCalorie}',
+            style: TextStyle(fontSize: 12, color: Colors.white),
+          ),
+        ),
+      );
+    }
+    return SizedBox.shrink(); // If no calorie data, return an empty widget
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -142,6 +162,17 @@ class _CalendarPageState extends State<CalendarPage> {
             headerStyle: HeaderStyle(
               formatButtonVisible: false,
               titleCentered: true,
+            ),
+            calendarBuilders: CalendarBuilders(
+              defaultBuilder: (context, day, focusedDay) {
+                final dateKey = '${day.year}-${day.month}-${day.day}';
+                return Stack(
+                  children: [
+                    Center(child: Text('${day.day}', style: TextStyle(color: Colors.purple))),
+                    buildDayIndicator(dateKey),
+                  ],
+                );
+              },
             ),
           ),
         ],
