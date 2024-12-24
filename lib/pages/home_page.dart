@@ -1,5 +1,8 @@
+import 'dart:async';
+import 'calendar_page.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';  // Import Firestore
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'food_detail_page.dart';  // Import the FoodDetailPage file
@@ -20,17 +23,23 @@ class _HomePageState extends State<HomePage> {
   List<dynamic> foodList = [];
   List<dynamic> savedFoods = [];
   TextEditingController searchController = TextEditingController();
-
+  Timer? timer; 
   // Fetch food items from Open Food Facts API
   Future<void> fetchFood(String query) async {
+    if (timer != null)
+      {
+        timer!.cancel();
+      }
     if (query.isEmpty) {
+      
       setState(() {
         foodList = [];
       });
       return;
     }
 
-    final url = Uri.parse('https://world.openfoodfacts.org/cgi/search.pl?search_terms=$query&search_simple=1&action=process&json=1');
+    timer = Timer(Duration(seconds: 2),()async{
+      final url = Uri.parse('https://tr.openfoodfacts.org/cgi/search.pl?search_terms=$query&search_simple=1&action=process&json=1');
     final response = await http.get(
       url,
       headers: {
@@ -45,6 +54,7 @@ class _HomePageState extends State<HomePage> {
     } else {
       print('Failed to fetch data');
     }
+    });
   }
 
   // Add food to the calorie tracker
@@ -87,6 +97,18 @@ void signUserOut() {
 
     return Scaffold(
       appBar: AppBar(
+        actions: [
+          IconButton(
+            icon: Icon(Icons.calendar_today),
+            onPressed: () {
+              // Navigate to CalendarPage when the calendar icon is clicked
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => CalendarPage()),
+              );
+            },
+          ),
+        ],
         title: Row(
           children: [
             // Welcome Message on the left
